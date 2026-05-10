@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyber Security Test Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="questions.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg2: #0b1024;
+      --panel: rgba(10, 16, 38, 0.62);
+      --panel-strong: rgba(11, 18, 46, 0.88);
+      --stroke: rgba(147, 197, 253, 0.18);
+      --text: #e5eefc;
+      --muted: #99a7c2;
+      --accent: #8b5cf6;
+      --accent2: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+      --shadow: 0 30px 80px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+    [data-theme="light"] {
+      --bg: #eff4ff;
+      --bg2: #dde9ff;
+      --panel: rgba(255, 255, 255, 0.66);
+      --panel-strong: rgba(255, 255, 255, 0.92);
+      --stroke: rgba(99, 102, 241, 0.18);
+      --text: #0b1220;
+      --muted: #52607a;
+      --shadow: 0 20px 50px rgba(34, 42, 77, .12);
+      color-scheme: light;
+    }
+    html, body { min-height: 100%; }
+    body {
+      background:
+        radial-gradient(circle at 20% 20%, rgba(56, 189, 248, .16), transparent 30%),
+        radial-gradient(circle at 80% 15%, rgba(139, 92, 246, .20), transparent 28%),
+        radial-gradient(circle at 50% 80%, rgba(59, 130, 246, .14), transparent 35%),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+    }
+    [data-theme="light"] .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
+    }
+    .glass-strong {
+      background: var(--panel-strong);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+    }
+    .cyber-title {
+      text-shadow: 0 0 30px rgba(56, 189, 248, 0.18);
+      letter-spacing: -0.04em;
+    }
+    .bg-grid {
+      background-image:
+        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 70px 70px;
+      mask-image: radial-gradient(circle at center, black, transparent 82%);
+      opacity: .2;
+      pointer-events: none;
+    }
+    .floaty { animation: floaty 8s ease-in-out infinite; }
+    .floaty.delay-1 { animation-delay: 1.2s; }
+    .floaty.delay-2 { animation-delay: 2.1s; }
+    @keyframes floaty { 0%,100% { transform: translateY(0px) } 50% { transform: translateY(-14px) } }
+    .slide-up { animation: slideUp .45s ease both; }
+    @keyframes slideUp { from { opacity:0; transform: translateY(16px) } to { opacity:1; transform: translateY(0) } }
+    .pulse-ring { position: relative; }
+    .pulse-ring::after {
+      content: '';
+      position: absolute; inset: -3px;
+      border-radius: inherit;
+      border: 1px solid rgba(56,189,248,.35);
+      animation: ring 2.4s ease-out infinite;
+    }
+    @keyframes ring {
+      0% { opacity: .7; transform: scale(1) }
+      100% { opacity: 0; transform: scale(1.12) }
+    }
+    .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 999px; }
+    .option-card {
+      transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .option-card:hover { transform: translateY(-2px); border-color: rgba(56,189,248,.45); box-shadow: 0 15px 40px rgba(0,0,0,.18); }
+    .option-card.selected { border-color: rgba(139,92,246,.9); background: rgba(139,92,246,.14); }
+    .option-card.correct { border-color: rgba(34,197,94,.95); background: rgba(34,197,94,.14); }
+    .option-card.wrong { border-color: rgba(239,68,68,.95); background: rgba(239,68,68,.12); }
+    .nav-pill.active { background: linear-gradient(135deg, rgba(56,189,248,.35), rgba(139,92,246,.35)); border-color: rgba(255,255,255,.26); }
+    .soft-border { border: 1px solid rgba(255,255,255,.08); }
+    [data-theme="light"] .soft-border { border-color: rgba(15,23,42,.08); }
+    .btn-cyber {
+      transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+      box-shadow: 0 10px 30px rgba(59,130,246,.18);
+    }
+    .btn-cyber:hover { transform: translateY(-1px); }
+    .btn-cyber:active { transform: translateY(1px) scale(.99); }
+    .loader-dot { animation: bounce 1s infinite ease-in-out; }
+    .loader-dot:nth-child(2) { animation-delay: .14s; }
+    .loader-dot:nth-child(3) { animation-delay: .28s; }
+    @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: .5 } 40% { transform: translateY(-10px); opacity: 1 } }
+    .toast-enter { animation: toastIn .3s ease both; }
+    @keyframes toastIn { from { opacity:0; transform: translateX(30px) } to { opacity:1; transform: translateX(0) } }
+    .fade-out { animation: fadeOut .2s ease both; }
+    @keyframes fadeOut { to { opacity:0; transform: scale(.98) } }
+    .dialog-backdrop { background: rgba(2, 6, 23, .66); backdrop-filter: blur(10px); }
+  </style>
+</head>
+<body data-theme="dark" class="min-h-screen text-slate-100">
+  <div class="fixed inset-0 bg-grid"></div>
+  <div class="fixed -top-24 -left-20 w-80 h-80 rounded-full bg-cyan-500/20 blur-3xl floaty"></div>
+  <div class="fixed top-24 -right-24 w-96 h-96 rounded-full bg-violet-500/20 blur-3xl floaty delay-1"></div>
+  <div class="fixed -bottom-24 left-1/3 w-96 h-96 rounded-full bg-blue-500/15 blur-3xl floaty delay-2"></div>
+
+  <div id="loadingScreen" class="fixed inset-0 z-[100] flex items-center justify-center dialog-backdrop">
+    <div class="glass-strong rounded-[2rem] px-8 py-7 text-center max-w-sm mx-4">
+      <div class="text-2xl font-bold cyber-title mb-2">Cyber Security Test Simulator</div>
+      <div class="text-sm text-slate-300/80 mb-5">Инициализация защищённой среды тестирования...</div>
+      <div class="flex justify-center gap-2 mb-3">
+        <span class="loader-dot w-3 h-3 rounded-full bg-cyan-400"></span>
+        <span class="loader-dot w-3 h-3 rounded-full bg-violet-400"></span>
+        <span class="loader-dot w-3 h-3 rounded-full bg-blue-400"></span>
+      </div>
+      <div class="text-xs text-slate-400">Загрузка вопросов, статистики и темы</div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed top-4 right-4 z-[90] flex flex-col gap-3 pointer-events-none"></div>
+
+  <header class="sticky top-0 z-40 border-b border-white/10 backdrop-blur-xl bg-black/15">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 justify-between">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-11 h-11 rounded-2xl glass flex items-center justify-center pulse-ring shrink-0">
+          <i class="fa-solid fa-shield-halved text-cyan-300 text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="font-semibold leading-none truncate">Cyber Security Test Simulator</div>
+          <div class="text-xs text-slate-400 truncate">Экзамен, практика, статистика и повтор ошибок</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="resumeBtn" class="hidden btn-cyber px-3 py-2 rounded-xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-play mr-2"></i>Продолжить</button>
+        <button id="homeBtn" class="btn-cyber px-3 py-2 rounded-xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-house mr-2"></i>Главная</button>
+        <button id="statsBtn" class="btn-cyber px-3 py-2 rounded-xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-chart-line mr-2"></i>Статистика</button>
+        <button id="themeBtn" class="btn-cyber px-3 py-2 rounded-xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-moon mr-2"></i>Тема</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+    <section id="homeView" class="slide-up">
+      <div class="grid xl:grid-cols-[1.25fr_0.75fr] gap-6 items-stretch">
+        <div class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden">
+          <div class="absolute inset-0 opacity-10 pointer-events-none" style="background: radial-gradient(circle at top left, rgba(56,189,248,.35), transparent 30%), radial-gradient(circle at bottom right, rgba(139,92,246,.35), transparent 28%);"></div>
+          <div class="relative">
+            <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium bg-cyan-400/10 text-cyan-200 border border-cyan-300/20 mb-4">
+              <i class="fa-solid fa-bolt"></i>
+              Подготовка к проверке знаний по кибербезопасности
+            </div>
+            <h1 class="cyber-title text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] mb-4">Cyber Security Test Simulator</h1>
+            <p class="max-w-2xl text-slate-300/90 text-base sm:text-lg leading-relaxed mb-6">
+              Полноценный симулятор тестирования с экзаменационным режимом на 17 случайных вопросов, свободной практикой, повтором ошибок, локальной статистикой и умным автосохранением.
+            </p>
+            <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <button id="examModeBtn" class="btn-cyber glass-strong rounded-2xl px-4 py-4 text-left hover:border-cyan-300/50">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-lg">Симуляция экзамена</div>
+                    <div class="text-sm text-slate-300/80 mt-1">17 вопросов, 60 минут, автозавершение</div>
+                  </div>
+                  <i class="fa-solid fa-graduation-cap text-cyan-300 text-xl"></i>
+                </div>
+              </button>
+              <button id="freeModeBtn" class="btn-cyber glass-strong rounded-2xl px-4 py-4 text-left hover:border-violet-300/50">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-lg">Свободный режим</div>
+                    <div class="text-sm text-slate-300/80 mt-1">25 / 50 / 75 / 100 / все вопросы</div>
+                  </div>
+                  <i class="fa-solid fa-layer-group text-violet-300 text-xl"></i>
+                </div>
+              </button>
+              <button id="mistakesBtn" class="btn-cyber glass-strong rounded-2xl px-4 py-4 text-left hover:border-rose-300/50">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-lg">Повтор ошибок</div>
+                    <div class="text-sm text-slate-300/80 mt-1">Только вопросы, где были промахи</div>
+                  </div>
+                  <i class="fa-solid fa-triangle-exclamation text-rose-300 text-xl"></i>
+                </div>
+              </button>
+              <button id="randomBtn" class="btn-cyber glass-strong rounded-2xl px-4 py-4 text-left hover:border-amber-300/50">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-lg">Случайный тест</div>
+                    <div class="text-sm text-slate-300/80 mt-1">Быстрая случайная практика</div>
+                  </div>
+                  <i class="fa-solid fa-dice text-amber-300 text-xl"></i>
+                </div>
+              </button>
+              <button id="statsHeroBtn" class="btn-cyber glass-strong rounded-2xl px-4 py-4 text-left hover:border-emerald-300/50">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-lg">Статистика</div>
+                    <div class="text-sm text-slate-300/80 mt-1">Графики, прогресс, история попыток</div>
+                  </div>
+                  <i class="fa-solid fa-chart-pie text-emerald-300 text-xl"></i>
+                </div>
+              </button>
+              <button id="toggleThemeHeroBtn" class="btn-cyber glass-strong rounded-2xl px-4 py-4 text-left hover:border-blue-300/50">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="font-semibold text-lg">Переключение темы</div>
+                    <div class="text-sm text-slate-300/80 mt-1">Dark / Light</div>
+                  </div>
+                  <i class="fa-solid fa-circle-half-stroke text-blue-300 text-xl"></i>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-6">
+          <div class="glass rounded-[2rem] p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <div class="text-sm text-slate-400">Пользовательская статистика</div>
+                <div class="text-2xl font-bold">Сводка</div>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-cyan-400/10 border border-cyan-300/20 flex items-center justify-center">
+                <i class="fa-solid fa-signal text-cyan-300"></i>
+              </div>
+            </div>
+            <div id="homeStatsGrid" class="grid grid-cols-2 gap-3"></div>
+          </div>
+
+          <div class="glass rounded-[2rem] p-5 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <div class="text-sm text-slate-400">Быстрые настройки</div>
+                <div class="text-2xl font-bold">Свободный режим</div>
+              </div>
+              <i class="fa-solid fa-sliders text-violet-300"></i>
+            </div>
+            <div class="space-y-4">
+              <label class="block text-sm text-slate-300">Количество вопросов</label>
+              <select id="freeCount" class="w-full rounded-2xl bg-black/20 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/50">
+                <option value="25">25 вопросов</option>
+                <option value="50">50 вопросов</option>
+                <option value="75">75 вопросов</option>
+                <option value="100">100 вопросов</option>
+                <option value="all">Все вопросы</option>
+              </select>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm text-slate-300 mb-2">Сложность</label>
+                  <select id="freeDifficulty" class="w-full rounded-2xl bg-black/20 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-violet-400/50">
+                    <option value="all">Любая</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm text-slate-300 mb-2">Поиск</label>
+                  <input id="freeSearch" type="search" placeholder="Ключевые слова" class="w-full rounded-2xl bg-black/20 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400/50" />
+                </div>
+              </div>
+              <button id="startFreeConfiguredBtn" class="w-full btn-cyber rounded-2xl px-4 py-3 font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-95"><i class="fa-solid fa-rocket mr-2"></i>Запустить свободный режим</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6 mt-6">
+        <div class="glass rounded-[2rem] p-5 sm:p-6">
+          <div class="text-sm text-slate-400 mb-2">История</div>
+          <div class="text-3xl font-black mb-1" id="kpiAttempts">0</div>
+          <div class="text-sm text-slate-300/75">прохождений сохранено в localStorage</div>
+        </div>
+        <div class="glass rounded-[2rem] p-5 sm:p-6">
+          <div class="text-sm text-slate-400 mb-2">Лучший результат</div>
+          <div class="text-3xl font-black mb-1" id="kpiBest">0%</div>
+          <div class="text-sm text-slate-300/75">максимальный процент верных ответов</div>
+        </div>
+        <div class="glass rounded-[2rem] p-5 sm:p-6">
+          <div class="text-sm text-slate-400 mb-2">Средняя точность</div>
+          <div class="text-3xl font-black mb-1" id="kpiAvg">0%</div>
+          <div class="text-sm text-slate-300/75">по всем завершённым тестам</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quizView" class="hidden slide-up">
+      <div class="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
+        <div class="space-y-6">
+          <div class="glass rounded-[2rem] p-5 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
+              <div>
+                <div id="modeBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5">Режим</div>
+                <div class="mt-3 text-sm text-slate-400">Прогресс теста</div>
+                <div class="text-2xl font-bold"><span id="questionCounter">0</span> / <span id="questionTotal">0</span></div>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
+                <div class="glass rounded-2xl px-4 py-3 min-w-[120px]"><div class="text-xs text-slate-400">Сложность</div><div id="activeDifficulty" class="font-semibold capitalize">—</div></div>
+                <div class="glass rounded-2xl px-4 py-3 min-w-[120px]"><div class="text-xs text-slate-400">Баллы</div><div id="activePoints" class="font-semibold">0</div></div>
+                <div class="glass rounded-2xl px-4 py-3 min-w-[120px]"><div class="text-xs text-slate-400">Таймер</div><div id="timerText" class="font-semibold">60:00</div></div>
+                <div class="glass rounded-2xl px-4 py-3 min-w-[120px]"><div class="text-xs text-slate-400">Верно</div><div id="correctMini" class="font-semibold">0</div></div>
+              </div>
+            </div>
+            <div class="mt-5">
+              <div class="flex items-center justify-between text-xs text-slate-400 mb-2"><span>Прогресс</span><span id="progressText">0%</span></div>
+              <div class="w-full h-3 rounded-full bg-white/10 overflow-hidden">
+                <div id="progressBar" class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-[2rem] p-5 sm:p-6 min-h-[420px] flex flex-col">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span id="difficultyTag" class="px-3 py-1 rounded-full text-xs font-semibold bg-white/8 border border-white/10">—</span>
+                <span id="favoriteTag" class="px-3 py-1 rounded-full text-xs font-semibold bg-white/8 border border-white/10">Избранное</span>
+                <span id="autosaveTag" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-200 border border-emerald-300/20">Autosave включен</span>
+              </div>
+              <button id="favoriteQuestionBtn" class="btn-cyber px-4 py-2 rounded-xl glass text-sm hover:bg-white/10"><i class="fa-regular fa-star mr-2"></i>В избранное</button>
+            </div>
+            <h2 id="questionText" class="text-xl sm:text-2xl lg:text-3xl font-bold leading-snug mb-6"></h2>
+            <div id="optionsGrid" class="grid sm:grid-cols-2 gap-3 mb-6"></div>
+            <div id="feedbackBox" class="hidden rounded-2xl border px-4 py-3 mb-6"></div>
+            <div class="mt-auto flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+              <div class="flex flex-wrap gap-3">
+                <button id="prevBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-arrow-left mr-2"></i>Назад</button>
+                <button id="skipBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-forward mr-2"></i>Пропустить</button>
+                <button id="confirmBtn" class="btn-cyber px-4 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-500 font-semibold"><i class="fa-solid fa-check mr-2"></i>Подтвердить</button>
+                <button id="nextBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-arrow-right mr-2"></i>Далее</button>
+              </div>
+              <div class="flex flex-wrap gap-3 justify-end">
+                <button id="fullscreenBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-expand mr-2"></i>Fullscreen</button>
+                <button id="finishBtn" class="btn-cyber px-4 py-3 rounded-2xl bg-rose-500/90 hover:bg-rose-500 font-semibold"><i class="fa-solid fa-flag-checkered mr-2"></i>Завершить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="space-y-6">
+          <div class="glass rounded-[2rem] p-5 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <div class="text-sm text-slate-400">Навигация</div>
+                <div class="text-xl font-bold">Вопросы</div>
+              </div>
+              <i class="fa-solid fa-compass text-cyan-300"></i>
+            </div>
+            <div id="questionNav" class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-5 gap-2 max-h-[420px] overflow-auto pr-1 scrollbar-thin"></div>
+          </div>
+          <div class="glass rounded-[2rem] p-5 sm:p-6">
+            <div class="text-sm text-slate-400">Подсказки</div>
+            <ul class="mt-3 space-y-2 text-sm text-slate-300/85 leading-relaxed">
+              <li><i class="fa-solid fa-keyboard mr-2 text-cyan-300"></i>1–4 — выбор ответа</li>
+              <li><i class="fa-solid fa-keyboard mr-2 text-cyan-300"></i>Enter — подтвердить</li>
+              <li><i class="fa-solid fa-keyboard mr-2 text-cyan-300"></i>← / → — переход между вопросами</li>
+              <li><i class="fa-solid fa-shield-halved mr-2 text-cyan-300"></i>Прогресс сохраняется автоматически</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="statsView" class="hidden slide-up">
+      <div class="flex items-center justify-between gap-3 mb-5">
+        <div>
+          <div class="text-sm text-slate-400">Аналитика</div>
+          <h2 class="text-3xl font-black cyber-title">Статистика пользователя</h2>
+        </div>
+        <button id="closeStatsBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-xmark mr-2"></i>Закрыть</button>
+      </div>
+      <div class="grid lg:grid-cols-4 gap-4 mb-6" id="statsCards"></div>
+      <div class="grid xl:grid-cols-3 gap-6">
+        <div class="glass rounded-[2rem] p-5 sm:p-6 xl:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-sm text-slate-400">Тренд</div>
+              <div class="text-xl font-bold">Результаты по попыткам</div>
+            </div>
+            <i class="fa-solid fa-chart-line text-cyan-300"></i>
+          </div>
+          <canvas id="scoreChart" height="120"></canvas>
+        </div>
+        <div class="glass rounded-[2rem] p-5 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-sm text-slate-400">Точность</div>
+              <div class="text-xl font-bold">Верные / неверные</div>
+            </div>
+            <i class="fa-solid fa-chart-pie text-violet-300"></i>
+          </div>
+          <canvas id="accuracyChart" height="200"></canvas>
+        </div>
+      </div>
+      <div class="grid xl:grid-cols-3 gap-6 mt-6">
+        <div class="glass rounded-[2rem] p-5 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-sm text-slate-400">Сложность</div>
+              <div class="text-xl font-bold">Средняя точность по уровням</div>
+            </div>
+            <i class="fa-solid fa-bars-progress text-emerald-300"></i>
+          </div>
+          <canvas id="difficultyChart" height="220"></canvas>
+        </div>
+        <div class="glass rounded-[2rem] p-5 sm:p-6 xl:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-sm text-slate-400">История</div>
+              <div class="text-xl font-bold">Последние попытки</div>
+            </div>
+            <i class="fa-solid fa-clock-rotate-left text-amber-300"></i>
+          </div>
+          <div id="historyList" class="space-y-3 max-h-[420px] overflow-auto pr-1 scrollbar-thin"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="resultsModal" class="fixed inset-0 z-[80] hidden items-center justify-center dialog-backdrop p-4">
+    <div class="glass-strong rounded-[2rem] max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-sm text-slate-400">Итог тестирования</div>
+          <div class="text-2xl sm:text-3xl font-black cyber-title">Результаты</div>
+        </div>
+        <button id="closeResultsBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10"><i class="fa-solid fa-xmark mr-2"></i>Закрыть</button>
+      </div>
+      <div class="p-5 sm:p-6 overflow-auto scrollbar-thin">
+        <div id="resultSummary" class="grid sm:grid-cols-2 xl:grid-cols-6 gap-4 mb-6"></div>
+        <div class="grid xl:grid-cols-2 gap-6">
+          <div class="glass rounded-[2rem] p-5 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <div class="text-sm text-slate-400">Ошибки</div>
+                <div class="text-xl font-bold">Неправильные вопросы</div>
+              </div>
+              <i class="fa-solid fa-circle-xmark text-rose-300"></i>
+            </div>
+            <div id="wrongList" class="space-y-4 max-h-[54vh] overflow-auto pr-1 scrollbar-thin"></div>
+          </div>
+          <div class="space-y-6">
+            <div class="glass rounded-[2rem] p-5 sm:p-6">
+              <div class="text-sm text-slate-400 mb-2">Следующие шаги</div>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <button id="reviewMistakesBtn" class="btn-cyber rounded-2xl px-4 py-4 glass text-left hover:bg-white/10"><div class="font-semibold"><i class="fa-solid fa-rotate-right mr-2"></i>Повторить ошибки</div><div class="text-sm text-slate-300/80 mt-1">Сформировать новый тест только из промахов</div></button>
+                <button id="backHomeBtn" class="btn-cyber rounded-2xl px-4 py-4 glass text-left hover:bg-white/10"><div class="font-semibold"><i class="fa-solid fa-house mr-2"></i>На главную</div><div class="text-sm text-slate-300/80 mt-1">Вернуться к панели управления</div></button>
+              </div>
+            </div>
+            <div class="glass rounded-[2rem] p-5 sm:p-6">
+              <div class="text-sm text-slate-400 mb-3">Правильные ответы</div>
+              <div id="answerKeyList" class="space-y-3 max-h-[38vh] overflow-auto pr-1 scrollbar-thin"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="fixed inset-0 z-[85] hidden items-center justify-center dialog-backdrop p-4">
+    <div class="glass-strong rounded-[2rem] max-w-md w-full p-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-400/10 flex items-center justify-center border border-amber-300/20"><i class="fa-solid fa-triangle-exclamation text-amber-300"></i></div>
+        <div>
+          <div class="font-bold text-lg">Покинуть тест?</div>
+          <div class="text-sm text-slate-400">Прогресс уже сохранён, но можно продолжить позже.</div>
+        </div>
+      </div>
+      <div class="text-sm text-slate-300/85 mb-5">Текущая сессия не завершена. Хотите выйти на главную?</div>
+      <div class="flex gap-3 justify-end">
+        <button id="cancelLeaveBtn" class="btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10">Остаться</button>
+        <button id="confirmLeaveBtn" class="btn-cyber px-4 py-3 rounded-2xl bg-rose-500/90 hover:bg-rose-500 font-semibold">Выйти</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    
+  (() => {
+    'use strict';
+
+    const STORAGE = {
+      history: 'cyberTestHistory',
+      favorites: 'cyberFavorites',
+      progress: 'cyberProgress',
+      theme: 'cyberTheme'
+    };
+
+    const state = {
+      theme: 'dark',
+      view: 'home',
+      session: null,
+      history: [],
+      favorites: new Set(),
+      charts: {},
+      leaveTarget: null,
+      loading: true
+    };
+
+    const els = {};
+
+    function $(id) { return document.getElementById(id); }
+    function safeJSONParse(value, fallback) {
+      try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }
+    }
+    function safeStore(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    }
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+    function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+    function escapeHTML(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+    function formatDate(ts) {
+      return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ts));
+    }
+    function formatTime(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const r = s % 60;
+      return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+    }
+    function toPercent(num) { return `${Math.round(num || 0)}%`; }
+    function byIdComparator(a, b) { return a.id - b.id; }
+
+    function difficultyOf(question) {
+      if (question.difficulty && ['easy', 'medium', 'hard'].includes(question.difficulty)) return question.difficulty;
+      const text = `${question.question} ${Object.values(question.options || {}).join(' ')}`.toLowerCase();
+      const len = question.question.length;
+      const hardKeywords = ['крипт', 'rsa', 'bell', 'lapadula', 'биба', 'хэш', 'hash', 'a5/1', 'a5', 'osi', 'pki', 'поток', 'фейстель'];
+      const mediumKeywords = ['атака', 'аутентифика', 'шифр', 'модель', 'управление', 'протокол', 'сет', 'контроль'];
+      if (len > 110 || hardKeywords.some((k) => text.includes(k))) return 'hard';
+      if (len > 75 || mediumKeywords.some((k) => text.includes(k))) return 'medium';
+      return 'easy';
+    }
+    function pointsOf(difficulty) {
+      return ({ easy: 2, medium: 3, hard: 4 })[difficulty] || 3;
+    }
+    function badgeClass(difficulty) {
+      return ({
+        easy: 'bg-emerald-500/10 text-emerald-200 border-emerald-300/20',
+        medium: 'bg-amber-500/10 text-amber-200 border-amber-300/20',
+        hard: 'bg-rose-500/10 text-rose-200 border-rose-300/20'
+      })[difficulty] || 'bg-white/8 text-slate-200 border-white/10';
+    }
+    function difficultyLabel(difficulty) {
+      return ({ easy: 'easy', medium: 'medium', hard: 'hard' })[difficulty] || 'unknown';
+    }
+    function optionLabel(index) {
+      return ['1', '2', '3', '4'][index] || String(index + 1);
+    }
+
+    function loadState() {
+      state.theme = localStorage.getItem(STORAGE.theme) || 'dark';
+      state.history = safeJSONParse(localStorage.getItem(STORAGE.history), []);
+      state.favorites = new Set(safeJSONParse(localStorage.getItem(STORAGE.favorites), []));
+      document.body.dataset.theme = state.theme;
+      updateThemeIcon();
+    }
+
+    function persistHistory() { safeStore(STORAGE.history, state.history); }
+    function persistFavorites() { safeStore(STORAGE.favorites, [...state.favorites]); }
+    function persistTheme() { localStorage.setItem(STORAGE.theme, state.theme); }
+    function persistProgress() {
+      if (!state.session || state.session.finished) {
+        localStorage.removeItem(STORAGE.progress);
+        return;
+      }
+      safeStore(STORAGE.progress, state.session);
+    }
+
+    function getFullBank() {
+      return questions.map((q) => ({ ...q, difficulty: difficultyOf(q), points: pointsOf(difficultyOf(q)) }));
+    }
+
+    function filteredBank({ search = '', difficulty = 'all' } = {}) {
+      const term = search.trim().toLowerCase();
+      return getFullBank().filter((q) => {
+        const matchesDifficulty = difficulty === 'all' || q.difficulty === difficulty;
+        if (!matchesDifficulty) return false;
+        if (!term) return true;
+        const haystack = `${q.question} ${Object.values(q.options).join(' ')}`.toLowerCase();
+        return haystack.includes(term);
+      });
+    }
+
+    function createSessionQuestion(raw) {
+      const options = shuffle(Object.entries(raw.options).map(([key, text]) => ({ original: Number(key), text })));
+      const correctIndex = options.findIndex((o) => o.original === Number(raw.correctOption));
+      return {
+        id: raw.id,
+        question: raw.question,
+        difficulty: raw.difficulty,
+        points: raw.points,
+        options: options.map((o, idx) => ({ label: optionLabel(idx), text: o.text })),
+        correctIndex: correctIndex + 1,
+        selected: null,
+        revealed: false,
+        favorite: state.favorites.has(raw.id),
+        skipped: false
+      };
+    }
+
+    function buildSession({ mode, count = 17, search = '', difficulty = 'all', source = 'all', fromMistakes = false, randomize = true } = {}) {
+      let pool = filteredBank({ search, difficulty });
+      if (source === 'mistakes') {
+        const wrongIds = [...new Set(state.history.flatMap((attempt) => (attempt.mistakes || []).map((m) => m.id)))];
+        pool = pool.filter((q) => wrongIds.includes(q.id));
+      }
+      if (!pool.length) return null;
+      if (randomize) pool = shuffle(pool);
+      const picked = count === 'all' ? pool : pool.slice(0, clamp(Number(count) || 17, 1, pool.length));
+      const questionsSession = picked.map(createSessionQuestion);
+      return {
+        id: `session-${Date.now()}`,
+        mode,
+        createdAt: Date.now(),
+        startedAt: Date.now(),
+        completedAt: null,
+        timerEnd: mode === 'exam' ? Date.now() + 60 * 60 * 1000 : null,
+        questions: questionsSession,
+        currentIndex: 0,
+        selectedCount: 0,
+        answers: Array(questionsSession.length).fill(null),
+        finished: false,
+        flags: { search, difficulty, count, source }
+      };
+    }
+
+    function currentQuestion() {
+      return state.session?.questions?.[state.session.currentIndex] || null;
+    }
+
+    function ensureSession() {
+      if (!state.session) return false;
+      state.session.questions.forEach((q) => { q.favorite = state.favorites.has(q.id); });
+      return true;
+    }
+
+    function setView(view) {
+      state.view = view;
+      els.homeView.classList.toggle('hidden', view !== 'home');
+      els.quizView.classList.toggle('hidden', view !== 'quiz');
+      els.statsView.classList.toggle('hidden', view !== 'stats');
+      if (view === 'stats') renderStatsView();
+    }
+
+    function updateThemeIcon() {
+      const dark = state.theme === 'dark';
+      const icon = dark ? 'fa-moon' : 'fa-sun';
+      const label = dark ? 'Тема' : 'Тема';
+      [els.themeBtn, els.toggleThemeHeroBtn].forEach((btn) => {
+        if (!btn) return;
+        btn.innerHTML = `<i class="fa-solid ${icon} mr-2"></i>${label}`;
+      });
+    }
+
+    function toggleTheme() {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      document.body.dataset.theme = state.theme;
+      persistTheme();
+      updateThemeIcon();
+      toast(`Тема переключена на ${state.theme === 'dark' ? 'dark' : 'light'}.`, 'info');
+    }
+
+    function updateHomeStats() {
+      const attempts = state.history.length;
+      const best = attempts ? Math.max(...state.history.map((t) => t.score50 || 0)) : 0;
+      const avg = attempts ? Math.round(state.history.reduce((s, t) => s + (t.score50 || 0), 0) / attempts) : 0;
+      const totalCorrect = state.history.reduce((s, t) => s + (t.correct || 0), 0);
+      const totalAnswered = state.history.reduce((s, t) => s + (t.totalAnswered || t.total || 0), 0);
+      const accuracy = totalAnswered ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+      els.kpiAttempts.textContent = attempts;
+      els.kpiBest.textContent = `${best}%`;
+      els.kpiAvg.textContent = `${avg}%`;
+      els.homeStatsGrid.innerHTML = `
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Прохождения</div>
+          <div class="text-2xl font-bold mt-1">${attempts}</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Точность</div>
+          <div class="text-2xl font-bold mt-1">${accuracy}%</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Избранные</div>
+          <div class="text-2xl font-bold mt-1">${state.favorites.size}</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Вопросов</div>
+          <div class="text-2xl font-bold mt-1">${questions.length}</div>
+        </div>
+      `;
+      els.resumeBtn.classList.toggle('hidden', !localStorage.getItem(STORAGE.progress));
+    }
+
+    function renderQuestionNav() {
+      if (!state.session) return;
+      els.questionNav.innerHTML = state.session.questions.map((q, idx) => {
+        const answered = state.session.answers[idx];
+        const active = idx === state.session.currentIndex;
+        let classes = 'nav-pill';
+        if (active) classes += ' active ring-2 ring-cyan-300/50';
+        if (answered === null) classes += ' bg-white/5';
+        else if (answered === q.correctIndex) classes += ' border-emerald-300/40 bg-emerald-500/10';
+        else classes += ' border-rose-300/40 bg-rose-500/10';
+        if (q.skipped) classes += ' opacity-70';
+        return `<button data-nav="${idx}" class="${classes} aspect-square rounded-xl border soft-border text-sm font-semibold transition hover:scale-[1.03]">${idx + 1}</button>`;
+      }).join('');
+      els.questionNav.querySelectorAll('[data-nav]').forEach((btn) => {
+        btn.addEventListener('click', () => goToQuestion(Number(btn.dataset.nav)));
+      });
+    }
+
+    function renderQuestion() {
+      if (!state.session) return;
+      ensureSession();
+      const q = currentQuestion();
+      if (!q) return;
+      const total = state.session.questions.length;
+      const index = state.session.currentIndex;
+      els.questionCounter.textContent = index + 1;
+      els.questionTotal.textContent = total;
+      els.questionText.textContent = q.question;
+      els.activeDifficulty.textContent = difficultyLabel(q.difficulty);
+      els.activePoints.textContent = q.points;
+      els.difficultyTag.className = `px-3 py-1 rounded-full text-xs font-semibold border ${badgeClass(q.difficulty)}`;
+      els.difficultyTag.textContent = `Difficulty: ${q.difficulty}`;
+      els.favoriteTag.textContent = q.favorite ? '★ Избранное' : '☆ Избранное';
+      els.favoriteQuestionBtn.innerHTML = `<i class="${q.favorite ? 'fa-solid' : 'fa-regular'} fa-star mr-2"></i>${q.favorite ? 'Убрать' : 'В избранное'}`;
+      els.correctMini.textContent = state.session.answers.filter((a, i) => a !== null && a === state.session.questions[i].correctIndex).length;
+      const answered = state.session.answers[index];
+      const isExam = state.session.mode === 'exam';
+      els.confirmBtn.classList.toggle('hidden', !isExam);
+      els.skipBtn.classList.toggle('hidden', !isExam);
+      els.nextBtn.classList.toggle('hidden', isExam);
+      els.feedbackBox.classList.add('hidden');
+      const feedback = [];
+      if (q.revealed) {
+        const correctText = q.options[q.correctIndex - 1].text;
+        const selectedText = q.selected ? q.options[q.selected - 1].text : 'Пропущен';
+        const ok = q.selected === q.correctIndex;
+        feedback.push(`<div class="font-semibold ${ok ? 'text-emerald-300' : 'text-rose-300'}">${ok ? 'Верно' : 'Неверно'}</div>`);
+        feedback.push(`<div class="text-sm text-slate-200/85 mt-1">Ваш ответ: <span class="font-semibold">${escapeHTML(selectedText)}</span></div>`);
+        feedback.push(`<div class="text-sm text-slate-200/85 mt-1">Правильный ответ: <span class="font-semibold">${escapeHTML(correctText)}</span></div>`);
+        els.feedbackBox.className = `rounded-2xl border px-4 py-3 mb-6 ${ok ? 'border-emerald-300/30 bg-emerald-500/10' : 'border-rose-300/30 bg-rose-500/10'}`;
+        els.feedbackBox.innerHTML = feedback.join('');
+        els.feedbackBox.classList.remove('hidden');
+      }
+      els.optionsGrid.innerHTML = q.options.map((opt, i) => {
+        const indexNum = i + 1;
+        const selected = answered === indexNum;
+        const correct = q.revealed && q.correctIndex === indexNum;
+        const wrong = q.revealed && selected && !correct;
+        const classes = [
+          'option-card rounded-2xl p-4 sm:p-5 border soft-border cursor-pointer text-left w-full',
+          selected && !q.revealed ? 'selected' : '',
+          correct ? 'correct' : '',
+          wrong ? 'wrong' : ''
+        ].filter(Boolean).join(' ');
+        return `
+          <button data-option="${indexNum}" class="${classes}">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center bg-white/10 border border-white/10 shrink-0 font-bold">${indexNum}</div>
+              <div class="min-w-0">
+                <div class="text-sm text-slate-400 mb-1">Вариант ${opt.label}</div>
+                <div class="font-medium leading-snug">${escapeHTML(opt.text)}</div>
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('');
+      els.optionsGrid.querySelectorAll('[data-option]').forEach((btn) => {
+        btn.addEventListener('click', () => selectOption(Number(btn.dataset.option)));
+      });
+      renderQuestionNav();
+      updateProgress();
+      if (isExam) {
+        els.confirmBtn.disabled = answered === null;
+        els.confirmBtn.classList.toggle('opacity-50', answered === null);
+      }
+    }
+
+    function updateProgress() {
+      if (!state.session) return;
+      const total = state.session.questions.length;
+      const current = state.session.currentIndex + 1;
+      const percent = total ? Math.round((current / total) * 100) : 0;
+      els.progressBar.style.width = `${percent}%`;
+      els.progressText.textContent = `${percent}%`;
+      const correct = state.session.answers.filter((a, i) => a !== null && a === state.session.questions[i].correctIndex).length;
+      els.correctMini.textContent = correct;
+      const wrong = state.session.answers.filter((a, i) => a !== null && a !== state.session.questions[i].correctIndex).length;
+      const answered = correct + wrong;
+      if (state.session.mode === 'exam') {
+        const remaining = Math.max(0, Math.round((state.session.timerEnd - Date.now()) / 1000));
+        els.timerText.textContent = formatTime(remaining);
+        els.timerText.classList.toggle('text-rose-300', remaining <= 600);
+      } else {
+        els.timerText.textContent = '—';
+      }
+    }
+
+    function selectOption(index) {
+      if (!state.session) return;
+      const q = currentQuestion();
+      if (!q) return;
+      state.session.answers[state.session.currentIndex] = index;
+      q.selected = index;
+      q.skipped = false;
+      if (state.session.mode === 'free') {
+        q.revealed = true;
+        q.selected = index;
+        state.session.questions[state.session.currentIndex] = q;
+        persistProgress();
+        renderQuestion();
+        const ok = index === q.correctIndex;
+        toast(ok ? 'Ответ верный.' : 'Ответ неверный.', ok ? 'success' : 'error');
+      } else {
+        persistProgress();
+        renderQuestion();
+      }
+    }
+
+    function goToQuestion(index) {
+      if (!state.session) return;
+      state.session.currentIndex = clamp(index, 0, state.session.questions.length - 1);
+      persistProgress();
+      renderQuestion();
+    }
+
+    function nextQuestion() {
+      if (!state.session) return;
+      if (state.session.currentIndex < state.session.questions.length - 1) {
+        state.session.currentIndex += 1;
+        persistProgress();
+        renderQuestion();
+      } else {
+        finishSession('end');
+      }
+    }
+
+    function prevQuestion() {
+      if (!state.session) return;
+      if (state.session.currentIndex > 0) {
+        state.session.currentIndex -= 1;
+        persistProgress();
+        renderQuestion();
+      }
+    }
+
+    function confirmCurrentAnswer() {
+      if (!state.session) return;
+      const q = currentQuestion();
+      if (!q) return;
+      const selected = state.session.answers[state.session.currentIndex];
+      if (selected === null) {
+        toast('Сначала выберите ответ.', 'warn');
+        return;
+      }
+      if (state.session.mode === 'exam') {
+        toast('Ответ сохранён.', 'info');
+        nextQuestion();
+        return;
+      }
+      q.revealed = true;
+      q.selected = selected;
+      renderQuestion();
+      persistProgress();
+      if (state.session.currentIndex < state.session.questions.length - 1) {
+        toast('Переход к следующему вопросу.', 'info');
+        setTimeout(nextQuestion, 350);
+      } else {
+        finishSession('end');
+      }
+    }
+
+    function skipQuestion() {
+      if (!state.session) return;
+      const q = currentQuestion();
+      if (!q) return;
+      state.session.answers[state.session.currentIndex] = null;
+      q.selected = null;
+      q.skipped = true;
+      if (state.session.mode === 'free') {
+        q.revealed = true;
+      }
+      persistProgress();
+      if (state.session.currentIndex < state.session.questions.length - 1) nextQuestion();
+      else finishSession('end');
+    }
+
+    function toggleFavoriteCurrent() {
+      if (!state.session) return;
+      const q = currentQuestion();
+      if (!q) return;
+      if (state.favorites.has(q.id)) {
+        state.favorites.delete(q.id);
+        q.favorite = false;
+        toast('Удалено из избранного.', 'info');
+      } else {
+        state.favorites.add(q.id);
+        q.favorite = true;
+        toast('Добавлено в избранное.', 'success');
+      }
+      persistFavorites();
+      persistProgress();
+      renderQuestion();
+    }
+
+    function computeResult(session) {
+      const answered = session.answers.filter((a) => a !== null).length;
+      const correct = session.answers.filter((a, i) => a !== null && a === session.questions[i].correctIndex).length;
+      const wrong = session.answers.filter((a, i) => a !== null && a !== session.questions[i].correctIndex).length;
+      const skipped = session.questions.length - answered;
+      const percent = session.questions.length ? Math.round((correct / session.questions.length) * 100) : 0;
+      const score = session.questions.reduce((sum, q, i) => sum + (session.answers[i] === q.correctIndex ? q.points : 0), 0);
+      const maxScore = session.questions.reduce((sum, q) => sum + q.points, 0);
+      const score50 = maxScore ? Math.round((score / maxScore) * 50) : 0;
+      const timeSpent = Math.max(1, Math.round((session.completedAt - session.startedAt) / 1000));
+      const mistakes = session.questions
+        .map((q, i) => ({
+          id: q.id,
+          question: q.question,
+          difficulty: q.difficulty,
+          points: q.points,
+          selected: session.answers[i],
+          correctIndex: q.correctIndex,
+          options: q.options,
+          correctText: q.options[q.correctIndex - 1].text,
+          selectedText: session.answers[i] ? q.options[session.answers[i] - 1].text : 'Пропущен',
+          isCorrect: session.answers[i] === q.correctIndex
+        }))
+        .filter((m) => !m.isCorrect);
+      return { answered, correct, wrong, skipped, percent, score, maxScore, score50, timeSpent, mistakes };
+    }
+
+    function finishSession(reason = 'manual') {
+      if (!state.session) return;
+      clearInterval(state.examTimer);
+      state.session.completedAt = Date.now();
+      state.session.finished = true;
+      const result = computeResult(state.session);
+      const difficultyBreakdown = { easy: { correct: 0, total: 0 }, medium: { correct: 0, total: 0 }, hard: { correct: 0, total: 0 } };
+      state.session.questions.forEach((q, i) => {
+        const bucket = difficultyBreakdown[q.difficulty] || difficultyBreakdown.medium;
+        bucket.total += 1;
+        if (state.session.answers[i] === q.correctIndex) bucket.correct += 1;
+      });
+      const attempt = {
+        id: state.session.id,
+        mode: state.session.mode,
+        createdAt: state.session.createdAt,
+        completedAt: state.session.completedAt,
+        total: state.session.questions.length,
+        totalAnswered: result.answered,
+        correct: result.correct,
+        wrong: result.wrong,
+        skipped: result.skipped,
+        percent: result.percent,
+        score: result.score,
+        maxScore: result.maxScore,
+        score50: result.score50,
+        timeSpent: result.timeSpent,
+        mistakes: result.mistakes,
+        difficultyBreakdown,
+        flags: state.session.flags
+      };
+      state.history.unshift(attempt);
+      state.history = state.history.slice(0, 100);
+      persistHistory();
+      localStorage.removeItem(STORAGE.progress);
+      state.session = null;
+      updateHomeStats();
+      renderStatsView();
+      renderResults(attempt);
+      setView('home');
+      if (reason === 'timeout') toast('Время вышло. Тест завершён автоматически.', 'warn');
+      else toast('Тест завершён.', 'success');
+    }
+
+    function renderResults(attempt) {
+      const summary = [
+        { label: 'Правильных', value: attempt.correct },
+        { label: 'Ошибок', value: attempt.wrong },
+        { label: 'Пропусков', value: attempt.skipped },
+        { label: 'Процент', value: `${attempt.percent}%` },
+        { label: 'Баллы', value: `${attempt.score}/${attempt.maxScore}` },
+        { label: 'Оценка /50', value: `${attempt.score50}/50` },
+      ];
+      els.resultSummary.innerHTML = summary.map((item) => `
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400 mb-1">${item.label}</div>
+          <div class="text-2xl font-black">${item.value}</div>
+        </div>
+      `).join('');
+      els.wrongList.innerHTML = attempt.mistakes.length ? attempt.mistakes.map((m, idx) => {
+        const selected = m.selected ? m.options[m.selected - 1].text : 'Пропущен';
+        return `
+          <div class="glass rounded-2xl p-4 border border-rose-300/15">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-1 rounded-full text-[11px] font-bold ${badgeClass(m.difficulty)}">${m.difficulty}</span>
+                <span class="text-xs text-slate-400">#${m.id}</span>
+              </div>
+              <span class="text-xs text-rose-300">${idx + 1}</span>
+            </div>
+            <div class="font-medium mb-2 leading-snug">${escapeHTML(m.question)}</div>
+            <div class="text-sm text-slate-300/85"><span class="text-slate-400">Ваш ответ:</span> ${escapeHTML(selected)}</div>
+            <div class="text-sm text-emerald-300/90 mt-1"><span class="text-slate-400">Правильный:</span> ${escapeHTML(m.correctText)}</div>
+          </div>
+        `;
+      }).join('') : '<div class="text-slate-400 text-sm">Ошибок нет — отличный результат.</div>';
+      els.answerKeyList.innerHTML = attempt.mistakes.length ? attempt.mistakes.map((m) => `
+        <div class="glass rounded-2xl p-4 border border-white/10">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="font-medium leading-snug">${escapeHTML(m.question)}</div>
+            <span class="px-2 py-1 rounded-full text-[11px] font-bold ${badgeClass(m.difficulty)}">${m.difficulty}</span>
+          </div>
+          <div class="text-sm text-emerald-300/90">${escapeHTML(m.correctText)}</div>
+        </div>
+      `).join('') : '<div class="text-slate-400 text-sm">Нет неверных вопросов для повторения.</div>';
+      showModal(els.resultsModal);
+    }
+
+    function startSession(mode, options = {}) {
+      const session = buildSession({ mode, ...options });
+      if (!session) {
+        toast('Не удалось собрать тест по выбранным условиям.', 'error');
+        return;
+      }
+      state.session = session;
+      persistProgress();
+      setView('quiz');
+      renderQuestion();
+      updateTopModeBadge();
+      if (mode === 'exam') startExamTimer();
+      else clearInterval(state.examTimer);
+      toast(mode === 'exam' ? 'Экзаменационная сессия начата.' : 'Практика начата.', 'success');
+    }
+
+    function updateTopModeBadge() {
+      if (!state.session) return;
+      const mode = state.session.mode;
+      const label = mode === 'exam' ? 'Экзамен' : 'Свободный режим';
+      const color = mode === 'exam' ? 'from-cyan-500/20 to-violet-500/20 text-cyan-100' : 'from-emerald-500/20 to-blue-500/20 text-emerald-100';
+      els.modeBadge.className = `inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-gradient-to-r ${color}`;
+      els.modeBadge.innerHTML = `<i class="fa-solid ${mode === 'exam' ? 'fa-graduation-cap' : 'fa-gamepad'}"></i>${label}`;
+      els.confirmBtn.innerHTML = mode === 'exam' ? '<i class="fa-solid fa-check mr-2"></i>Подтвердить' : '<i class="fa-solid fa-check mr-2"></i>Проверить';
+      els.nextBtn.classList.toggle('hidden', mode === 'exam');
+      els.skipBtn.classList.toggle('hidden', mode !== 'exam');
+      els.confirmBtn.classList.toggle('hidden', mode !== 'exam');
+      els.finishBtn.textContent = mode === 'exam' ? 'Завершить' : 'Завершить';
+    }
+
+    function startExamTimer() {
+      clearInterval(state.examTimer);
+      state.examTimer = setInterval(() => {
+        if (!state.session) return;
+        const remaining = Math.max(0, Math.floor((state.session.timerEnd - Date.now()) / 1000));
+        els.timerText.textContent = formatTime(remaining);
+        els.timerText.classList.toggle('text-rose-300', remaining <= 600);
+        if (remaining <= 0) {
+          clearInterval(state.examTimer);
+          finishSession('timeout');
+        }
+      }, 1000);
+    }
+
+    function showModal(modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    function hideModal(modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+    function renderStatsView() {
+      const attempts = [...state.history];
+      const total = attempts.length;
+      const avgScore = total ? Math.round(attempts.reduce((s, a) => s + (a.score50 || 0), 0) / total) : 0;
+      const best = total ? Math.max(...attempts.map((a) => a.score50 || 0)) : 0;
+      const totalCorrect = attempts.reduce((s, a) => s + (a.correct || 0), 0);
+      const totalAnswered = attempts.reduce((s, a) => s + (a.totalAnswered || a.total || 0), 0);
+      const overallPct = totalAnswered ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+      const timeAvg = total ? Math.round(attempts.reduce((s, a) => s + (a.timeSpent || 0), 0) / total) : 0;
+      const mistakes = attempts.reduce((s, a) => s + (a.wrong || 0), 0);
+
+      els.statsCards.innerHTML = [
+        ['Попытки', total],
+        ['Лучший', `${best}/50`],
+        ['Средний', `${avgScore}/50`],
+        ['Точность', `${overallPct}%`],
+        ['Ошибок', mistakes],
+        ['Избранных', state.favorites.size],
+        ['Среднее время', formatTime(timeAvg)],
+        ['Всего вопросов', questions.length]
+      ].map(([label, value]) => `
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400">${label}</div>
+          <div class="text-2xl font-black mt-1">${value}</div>
+        </div>
+      `).join('');
+      els.historyList.innerHTML = attempts.length ? attempts.map((a) => `
+        <div class="glass rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="px-2 py-1 rounded-full text-[11px] font-bold bg-white/8 border border-white/10">${a.mode === 'exam' ? 'Экзамен' : 'Практика'}</span>
+              <span class="text-xs text-slate-400">${formatDate(a.completedAt || a.createdAt)}</span>
+            </div>
+            <div class="font-semibold">${a.correct}/${a.total} верно · ${a.percent}% · ${a.score50}/50</div>
+            <div class="text-sm text-slate-400 mt-1">${a.wrong} ошибок, ${a.skipped} пропусков, ${formatTime(a.timeSpent || 0)}</div>
+          </div>
+          <button class="reviewFromHistory btn-cyber px-4 py-3 rounded-2xl glass text-sm hover:bg-white/10" data-review-id="${a.id}"><i class="fa-solid fa-rotate-right mr-2"></i>Повторить</button>
+        </div>
+      `).join('') : '<div class="text-slate-400 text-sm">История пока пуста. Пройдите первый тест, чтобы увидеть аналитику.</div>';
+
+      els.historyList.querySelectorAll('[data-review-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const attempt = state.history.find((a) => a.id === btn.dataset.reviewId);
+          if (!attempt?.mistakes?.length) { toast('Нет ошибок для повторения.', 'warn'); return; }
+          const ids = [...new Set(attempt.mistakes.map((m) => m.id))];
+          const bank = getFullBank().filter((q) => ids.includes(q.id));
+          startCustomSession('free', bank, { source: 'mistakes', count: bank.length, randomize: true });
+        });
+      });
+
+      renderCharts(attempts);
+    }
+
+    function startCustomSession(mode, bank, extra = {}) {
+      if (!bank.length) {
+        toast('Нет подходящих вопросов для этой сессии.', 'error');
+        return;
+      }
+      const questionsSession = shuffle(bank).slice(0, extra.count === 'all' ? bank.length : clamp(Number(extra.count || bank.length), 1, bank.length)).map(createSessionQuestion);
+      state.session = {
+        id: `session-${Date.now()}`,
+        mode,
+        createdAt: Date.now(),
+        startedAt: Date.now(),
+        completedAt: null,
+        timerEnd: null,
+        questions: questionsSession,
+        currentIndex: 0,
+        selectedCount: 0,
+        answers: Array(questionsSession.length).fill(null),
+        finished: false,
+        flags: { ...extra }
+      };
+      persistProgress();
+      setView('quiz');
+      updateTopModeBadge();
+      renderQuestion();
+      clearInterval(state.examTimer);
+      toast('Сессия повторения запущена.', 'success');
+    }
+
+    function renderCharts(attempts) {
+      const lineCanvas = $('scoreChart');
+      const doughnutCanvas = $('accuracyChart');
+      const diffCanvas = $('difficultyChart');
+      if (!lineCanvas || !doughnutCanvas || !diffCanvas) return;
+
+      const scoreData = attempts.slice().reverse();
+      const labels = scoreData.map((_, idx) => `#${idx + 1}`);
+      const scores = scoreData.map((a) => a.score50 || 0);
+      const totalCorrect = attempts.reduce((s, a) => s + (a.correct || 0), 0);
+      const totalWrong = attempts.reduce((s, a) => s + (a.wrong || 0), 0);
+      const diffTotals = { easy: { correct: 0, total: 0 }, medium: { correct: 0, total: 0 }, hard: { correct: 0, total: 0 } };
+      attempts.forEach((a) => {
+        const breakdown = a.difficultyBreakdown || {};
+        ['easy', 'medium', 'hard'].forEach((d) => {
+          diffTotals[d].correct += breakdown[d]?.correct || 0;
+          diffTotals[d].total += breakdown[d]?.total || 0;
+        });
+      });
+      const diffAccuracy = ['easy', 'medium', 'hard'].map((d) => {
+        const total = diffTotals[d].total;
+        return total ? Math.round((diffTotals[d].correct / total) * 100) : 0;
+      });
+
+      destroyCharts();
+      state.charts.score = new Chart(lineCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Score /50',
+            data: scores,
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, suggestedMax: 50, grid: { color: 'rgba(148,163,184,.12)' } },
+            x: { grid: { color: 'rgba(148,163,184,.08)' } }
+          }
+        }
+      });
+      state.charts.acc = new Chart(doughnutCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Верно', 'Неверно'],
+          datasets: [{ data: [totalCorrect, totalWrong || 0], borderWidth: 0 }]
+        },
+        options: {
+          cutout: '72%',
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+      state.charts.diff = new Chart(diffCanvas, {
+        type: 'bar',
+        data: {
+          labels: ['Easy', 'Medium', 'Hard'],
+          datasets: [{ label: '%', data: diffAccuracy, borderRadius: 12 }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(148,163,184,.12)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function destroyCharts() {
+      Object.values(state.charts).forEach((chart) => { try { chart.destroy(); } catch {} });
+      state.charts = {};
+    }
+
+    function toast(message, type = 'info') {
+      const colors = {
+        success: 'border-emerald-300/20 bg-emerald-500/10 text-emerald-100',
+        error: 'border-rose-300/20 bg-rose-500/10 text-rose-100',
+        warn: 'border-amber-300/20 bg-amber-500/10 text-amber-100',
+        info: 'border-cyan-300/20 bg-cyan-500/10 text-cyan-100'
+      };
+      const el = document.createElement('div');
+      el.className = `toast-enter pointer-events-auto glass rounded-2xl px-4 py-3 border ${colors[type] || colors.info} shadow-xl max-w-sm`;
+      el.innerHTML = `<div class="flex items-start gap-3"><i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-xmark' : type === 'warn' ? 'fa-triangle-exclamation' : 'fa-circle-info'} mt-0.5"></i><div class="text-sm leading-snug">${escapeHTML(message)}</div></div>`;
+      els.toastContainer.appendChild(el);
+      setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 220); }, 2800);
+    }
+
+    function confirmNavigation(onConfirm) {
+      if (state.session && !state.session.finished) {
+        state.leaveTarget = onConfirm;
+        showModal(els.confirmModal);
+        return true;
+      }
+      return false;
+    }
+
+    function openHome() {
+      if (confirmNavigation(() => {
+        state.session = null;
+        clearInterval(state.examTimer);
+        localStorage.removeItem(STORAGE.progress);
+        setView('home');
+        updateHomeStats();
+        toast('Сессия сохранена и закрыта.', 'info');
+      })) return;
+      setView('home');
+      updateHomeStats();
+    }
+
+    function resumeProgress() {
+      const saved = safeJSONParse(localStorage.getItem(STORAGE.progress), null);
+      if (!saved) { toast('Сохранённой сессии нет.', 'warn'); return; }
+      state.session = saved;
+      setView('quiz');
+      updateTopModeBadge();
+      renderQuestion();
+      if (state.session.mode === 'exam') startExamTimer();
+      toast('Сессия восстановлена.', 'success');
+    }
+
+    function restoreSavedSessionIfAny() {
+      const saved = safeJSONParse(localStorage.getItem(STORAGE.progress), null);
+      if (saved && !saved.finished) {
+        els.resumeBtn.classList.remove('hidden');
+        toast('Обнаружен сохранённый прогресс теста.', 'info');
+      }
+    }
+
+    function attachEvents() {
+      els.themeBtn.addEventListener('click', toggleTheme);
+      els.toggleThemeHeroBtn.addEventListener('click', toggleTheme);
+      els.homeBtn.addEventListener('click', openHome);
+      els.statsBtn.addEventListener('click', () => {
+        if (confirmNavigation(() => {
+          setView('stats');
+          toast('Открыта статистика без потери прогресса.', 'info');
+        })) return;
+        setView('stats');
+      });
+      els.statsHeroBtn.addEventListener('click', () => setView('stats'));
+      els.examModeBtn.addEventListener('click', () => startSession('exam', { count: 17, randomize: true, source: 'all' }));
+      els.randomBtn.addEventListener('click', () => startSession('free', { count: 20, randomize: true, source: 'all' }));
+      els.freeModeBtn.addEventListener('click', () => startFreeConfigured());
+      els.startFreeConfiguredBtn.addEventListener('click', () => startFreeConfigured());
+      els.mistakesBtn.addEventListener('click', () => startMistakesMode());
+      els.resumeBtn.addEventListener('click', resumeProgress);
+      els.closeResultsBtn.addEventListener('click', () => hideModal(els.resultsModal));
+      els.backHomeBtn.addEventListener('click', () => { hideModal(els.resultsModal); openHome(); });
+      els.reviewMistakesBtn.addEventListener('click', () => { hideModal(els.resultsModal); startMistakesMode(); });
+      els.closeStatsBtn.addEventListener('click', openHome);
+      els.cancelLeaveBtn.addEventListener('click', () => { hideModal(els.confirmModal); state.leaveTarget = null; });
+      els.confirmLeaveBtn.addEventListener('click', () => { const go = state.leaveTarget; hideModal(els.confirmModal); state.leaveTarget = null; if (typeof go === 'function') go(); });
+      els.favoriteQuestionBtn.addEventListener('click', toggleFavoriteCurrent);
+      els.prevBtn.addEventListener('click', prevQuestion);
+      els.nextBtn.addEventListener('click', nextQuestion);
+      els.skipBtn.addEventListener('click', skipQuestion);
+      els.confirmBtn.addEventListener('click', confirmCurrentAnswer);
+      els.finishBtn.addEventListener('click', () => finishSession('manual'));
+      els.fullscreenBtn.addEventListener('click', toggleFullscreen);
+      window.addEventListener('beforeunload', (e) => {
+        if (state.session && !state.session.finished) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      });
+      document.addEventListener('keydown', handleHotkeys);
+      window.addEventListener('storage', () => {
+        state.history = safeJSONParse(localStorage.getItem(STORAGE.history), []);
+        state.favorites = new Set(safeJSONParse(localStorage.getItem(STORAGE.favorites), []));
+        updateHomeStats();
+        if (state.view === 'stats') renderStatsView();
+      });
+      window.addEventListener('resize', () => { if (state.view === 'stats') renderStatsView(); });
+    }
+
+    function startFreeConfigured() {
+      const settings = {
+        count: els.freeCount.value,
+        difficulty: els.freeDifficulty.value,
+        search: els.freeSearch.value,
+        randomize: true
+      };
+      startSession('free', settings);
+    }
+
+    function startMistakesMode() {
+      const wrongIds = [...new Set(state.history.flatMap((attempt) => (attempt.mistakes || []).map((m) => m.id)))];
+      const bank = getFullBank().filter((q) => wrongIds.includes(q.id));
+      if (!bank.length) {
+        toast('Пока нет ошибок для повторения.', 'warn');
+        return;
+      }
+      startCustomSession('free', bank, { source: 'mistakes', count: bank.length, randomize: true });
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.().then(() => toast('Fullscreen включён.', 'info')).catch(() => toast('Fullscreen недоступен в этом браузере.', 'warn'));
+      } else {
+        document.exitFullscreen?.().then(() => toast('Fullscreen выключен.', 'info')).catch(() => {});
+      }
+    }
+
+    function handleHotkeys(e) {
+      if (state.view !== 'quiz' || !state.session) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+      const key = e.key;
+      if (['1', '2', '3', '4'].includes(key)) {
+        e.preventDefault();
+        selectOption(Number(key));
+      } else if (key === 'Enter') {
+        e.preventDefault();
+        confirmCurrentAnswer();
+      } else if (key === 'ArrowLeft') {
+        e.preventDefault();
+        prevQuestion();
+      } else if (key === 'ArrowRight') {
+        e.preventDefault();
+        nextQuestion();
+      } else if (key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFavoriteCurrent();
+      } else if (key.toLowerCase() === 'f11') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    }
+
+    function bindNoExitButton() {
+      // Intentionally empty placeholder for future extensions without adding files.
+    }
+
+    function initialize() {
+      els.loadingScreen = $('loadingScreen');
+      els.toastContainer = $('toastContainer');
+      els.resumeBtn = $('resumeBtn');
+      els.homeBtn = $('homeBtn');
+      els.statsBtn = $('statsBtn');
+      els.themeBtn = $('themeBtn');
+      els.examModeBtn = $('examModeBtn');
+      els.freeModeBtn = $('freeModeBtn');
+      els.mistakesBtn = $('mistakesBtn');
+      els.randomBtn = $('randomBtn');
+      els.statsHeroBtn = $('statsHeroBtn');
+      els.toggleThemeHeroBtn = $('toggleThemeHeroBtn');
+      els.startFreeConfiguredBtn = $('startFreeConfiguredBtn');
+      els.kpiAttempts = $('kpiAttempts');
+      els.kpiBest = $('kpiBest');
+      els.kpiAvg = $('kpiAvg');
+      els.homeStatsGrid = $('homeStatsGrid');
+      els.freeCount = $('freeCount');
+      els.freeDifficulty = $('freeDifficulty');
+      els.freeSearch = $('freeSearch');
+      els.homeView = $('homeView');
+      els.quizView = $('quizView');
+      els.statsView = $('statsView');
+      els.modeBadge = $('modeBadge');
+      els.questionCounter = $('questionCounter');
+      els.questionTotal = $('questionTotal');
+      els.activeDifficulty = $('activeDifficulty');
+      els.activePoints = $('activePoints');
+      els.timerText = $('timerText');
+      els.correctMini = $('correctMini');
+      els.progressBar = $('progressBar');
+      els.progressText = $('progressText');
+      els.difficultyTag = $('difficultyTag');
+      els.favoriteTag = $('favoriteTag');
+      els.favoriteQuestionBtn = $('favoriteQuestionBtn');
+      els.questionText = $('questionText');
+      els.optionsGrid = $('optionsGrid');
+      els.feedbackBox = $('feedbackBox');
+      els.prevBtn = $('prevBtn');
+      els.nextBtn = $('nextBtn');
+      els.skipBtn = $('skipBtn');
+      els.confirmBtn = $('confirmBtn');
+      els.finishBtn = $('finishBtn');
+      els.fullscreenBtn = $('fullscreenBtn');
+      els.questionNav = $('questionNav');
+      els.statsCards = $('statsCards');
+      els.historyList = $('historyList');
+      els.scoreChart = $('scoreChart');
+      els.accuracyChart = $('accuracyChart');
+      els.difficultyChart = $('difficultyChart');
+      els.closeStatsBtn = $('closeStatsBtn');
+      els.resultsModal = $('resultsModal');
+      els.closeResultsBtn = $('closeResultsBtn');
+      els.resultSummary = $('resultSummary');
+      els.wrongList = $('wrongList');
+      els.answerKeyList = $('answerKeyList');
+      els.reviewMistakesBtn = $('reviewMistakesBtn');
+      els.backHomeBtn = $('backHomeBtn');
+      els.confirmModal = $('confirmModal');
+      els.cancelLeaveBtn = $('cancelLeaveBtn');
+      els.confirmLeaveBtn = $('confirmLeaveBtn');
+      els.loadingScreen = $('loadingScreen');
+
+      loadState();
+      updateHomeStats();
+      restoreSavedSessionIfAny();
+      attachEvents();
+      bindNoExitButton();
+      setView('home');
+      setTimeout(() => {
+        els.loadingScreen.classList.add('fade-out');
+        setTimeout(() => { els.loadingScreen.remove(); state.loading = false; }, 220);
+      }, 450);
+    }
+
+    window.addEventListener('load', initialize);
+
+  })();
+  </script>
+</body>
+</html>
