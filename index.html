@@ -122,46 +122,6 @@
     .fade-out { animation: fadeOut .2s ease both; }
     @keyframes fadeOut { to { opacity:0; transform: scale(.98) } }
     .dialog-backdrop { background: rgba(2, 6, 23, .66); backdrop-filter: blur(10px); }
-
-    @media (max-width: 768px) {
-
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
-
-  .glass,
-  .card,
-  .panel {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  .bg-animation,
-  .particles,
-  .gradient-orb {
-    display: none !important;
-  }
-
-  .card,
-  .panel,
-  .button {
-    box-shadow: none !important;
-  }
-
-}
-.mobile-performance * {
-  animation: none !important;
-  transition: none !important;
-}
-
-.mobile-performance .glass {
-  backdrop-filter: none !important;
-}
-
-.mobile-performance .particles {
-  display: none !important;
-}
   </style>
 </head>
 <body data-theme="dark" class="min-h-screen text-slate-100">
@@ -560,20 +520,6 @@
       leaveTarget: null,
       loading: true
     };
-
-    const isMobile =
-  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  || window.innerWidth < 768;
-    if (isMobile) {
-    document.body.classList.add('mobile-performance');
-    }
-
-  if (!isMobile) {
-   renderCharts();
-  }
-
-  const prefersReducedMotion =
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const els = {};
 
